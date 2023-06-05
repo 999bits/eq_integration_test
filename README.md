@@ -1,2 +1,2 @@
-# blockchaindev_rick
-This is blockchain developer repository.
+# Y2K_Integration_Test
+This is Y2K Finance Earthquake Integration Test Project.
