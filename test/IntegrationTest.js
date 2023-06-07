@@ -131,8 +131,8 @@ describe("Integration test for Y2K Earthquake Contracts on Arbitrum mainnet", fu
         console.log("after deposit ...",await weth.balanceOf(farmer1.address));
       
       // Transfer shares to 3rd parth, StakingRewards
-        // await hedgeVaultContract.connect(farmer1).approve(insrStake_addr, true);
-        // await stakingRewardsContract.connect(farmer1).stake(depositAmount);
+        await hedgeVaultContract.connect(farmer1).approve(insrStake_addr, true);
+        await stakingRewardsContract.connect(farmer1).stake(depositAmount);
 
       // Trigger epoch event
         // await controller.connect(signer).triggerDepeg(marketIndex, 1696269600);
