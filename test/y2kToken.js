@@ -1,0 +1,2 @@
+const y2kTokenABI = [{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"stateMutability":"payable","type":"fallback"},{"stateMutability":"payable","type":"receive"}];
+module.exports = {y2kTokenABI};
