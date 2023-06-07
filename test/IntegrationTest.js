@@ -213,12 +213,19 @@ describe("Integration test for Y2K Earthquake Contracts on Arbitrum mainnet", fu
 
         const balanceOf = await hedgeStakingRewardsContract.balanceOf(farmer1.address);
         console.log("balanceOf", balanceOf);
+        await expectd(hedgeStakingRewardsContract.connect(farmer1).getReward()).to.emit(hedgeStakingRewardsContract, "RewardPaid");
 
         const share1 = await hedgeVaultContract.connect(farmer1).withdraw(1696269600, depositAmount1, farmer1.address, farmer1.address);
         console.log("share1= >>>", share1);
 
+        await expectd(riskStakingRewardsContract.connect(farmer2).getReward()).to.emit(riskStakingRewardsContract, "RewardPaid");
+        
+        const earnedAmount = await hedgeStakingRewardsContract.connect(farmer1).earned(farmer1.address);
+        console.log("earned", earnedAmount);
+
         let farmerWETHBalanceAfterDeposit = await weth.balanceOf(farmer1.address);
         console.log("farmerWETHBalanceAfterDeposit", farmerWETHBalanceAfterDeposit);
+
 
         let farmer2WETHBalanceAfterDeposit = await weth.balanceOf(farmer2.address);
         console.log("farmer2WETHBalanceAfterDeposit", farmer2WETHBalanceAfterDeposit);
