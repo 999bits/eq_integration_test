@@ -2,17 +2,17 @@ const { time, loadFixture } = require("@nomicfoundation/hardhat-network-helpers"
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { impersonates, depositVault, setupCoreProtocol, advanceNBlock } = require("./utils.js");
+const { impersonates, depositVault, setupCoreProtocol, advanceNBlock } = require("./utils/utils.js");
 const { send } = require("@openzeppelin/test-helpers");
 const BigNumber = require("bignumber.js");
 
-const {controllerABI} = require("./controller.js");
-const {vaultFactoryABI, vaultFactoryByteCode} = require("./vaultFactory.js");
-const {rewardsFactoryABI} = require("./rewardsFactory.js");
-const {y2kTokenABI} = require("./y2kToken.js");
-const {y2kTreasuryABI} = require("./y2kTreasury.js");
-const {wethABI} = require("./weth.js");
-const { currentBlock, advanceBlockTo } = require("./Time");
+const {controllerABI} = require("./utils/controller.js");
+const {vaultFactoryABI, vaultFactoryByteCode} = require("./utils/vaultFactory.js");
+const {rewardsFactoryABI} = require("./utils/rewardsFactory.js");
+const {y2kTokenABI} = require("./utils/y2kToken.js");
+const {y2kTreasuryABI} = require("./utils/y2kTreasury.js");
+const {wethABI} = require("./utils/weth.js");
+const { currentBlock, advanceBlockTo } = require("./utils/Time");
 
 const weth_addr = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 const dai_addr = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1";
