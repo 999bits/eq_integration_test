@@ -23,4 +23,13 @@ interface IStakingRewards {
     function rewardPerToken() external view returns (uint256);
 
     function totalSupply() external view returns (uint256);
+
+    function unpause() external;
+
+    event RewardAdded(uint256 reward);
+    event Staked(address indexed user, uint256 id, uint256 amount);
+    event Withdrawn(address indexed user, uint256 id, uint256 amount);
+    event RewardPaid(address indexed user, uint256 reward);
+    event RewardsDurationUpdated(uint256 newDuration);
+    event Recovered(address token, uint256 amount);
 }

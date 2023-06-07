@@ -39,9 +39,9 @@ contract IVault {
     mapping(uint256 => uint256) public idFinalTVL;
     mapping(uint256 => uint256) public idClaimTVL;
     // @audit uint32 for timestamp is enough for the next 80 years
-    mapping(uint256 => uint256) public idEpochBegin;
-    // @audit id can be uint32
-    mapping(uint256 => bool) public idEpochEnded;
+    // mapping(uint256 => uint256) public idEpochBegin;
+    // // @audit id can be uint32
+    // mapping(uint256 => bool) public idEpochEnded;
     // @audit id can be uint32
     mapping(uint256 => bool) public idExists;
     mapping(uint256 => uint256) public epochFee;
@@ -50,6 +50,9 @@ contract IVault {
     /*///////////////////////////////////////////////////////////////
                         DEPOSIT/WITHDRAWAL LOGIC
     //////////////////////////////////////////////////////////////*/
+    function idEpochBegin(uint256 marketIndex) public view returns (uint256) {}
+
+    function idEpochEnded(uint256 marketIndex) public view returns (bool) {}
 
     /**
         @notice Deposit function from ERC4626, with payment of a fee to a treasury implemented;
@@ -164,4 +167,9 @@ contract IVault {
     function epochsLength() public view returns (uint256) {
         return epochs.length;
     }
+
+    function setApprovalForAll(
+        address operator,
+        bool approved
+    ) public virtual {}
 }
