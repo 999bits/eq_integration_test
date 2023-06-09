@@ -172,4 +172,6 @@ contract IVault {
         address operator,
         bool approved
     ) public virtual {}
+
+    function balanceOf(address) external view returns (uint256) {}
 }

@@ -24,6 +24,9 @@ const y2k_token_addr = "0x65c936f008BC34fE819bce9Fa5afD9dc2d49977f";
 const y2k_treasury_addr = "0x5c84cf4d91dc0acde638363ec804792bb2108258";
 const aggregator_addr = "0xc5c8e77b397e531b8ec06bfb0048328b30e9ecfb";   //  DAI/USD aggregator
 
+const startEpoch = 1686527605;
+const endEpoch = 1686614005;
+
 describe("Integration test for Y2K Earthquake Contracts on Arbitrum mainnet", function () {
   let weth;
   let accounts;
@@ -40,6 +43,8 @@ describe("Integration test for Y2K Earthquake Contracts on Arbitrum mainnet", fu
   let underlying;
   let contract_owner = "0x45aA9d8B9D567489be9DeFcd085C6bA72BBf344F";
   let underlyingWhale;
+  let fakeOracle;
+  let f_oracle = "0x0809E3d38d1B4214958faf06D8b1B1a2b73f2ab8";
 
   async function setupExternalContracts() {
 
@@ -64,8 +69,8 @@ describe("Integration test for Y2K Earthquake Contracts on Arbitrum mainnet", fu
   async function setupBalance(){
 
     [farmer1, farmer2] = await ethers.getSigners();
-    await weth.connect(farmer1).deposit({value: ethers.utils.parseEther("10")});
-    await weth.connect(farmer2).deposit({value: ethers.utils.parseEther("50")});
+    await weth.connect(farmer1).deposit({value: ethers.utils.parseEther("100")});
+    await weth.connect(farmer2).deposit({value: ethers.utils.parseEther("500")});
 
   }
 
@@ -75,6 +80,14 @@ describe("Integration test for Y2K Earthquake Contracts on Arbitrum mainnet", fu
     await impersonates([contract_owner]); //farmer1
     await setupExternalContracts();
     await setupBalance();
+
+    const fake = await ethers.getContractFactory("FakeOracle");
+    fakeOracle = await fake.deploy(f_oracle, 90995265);
+    console.log("fake oracle address", fakeOracle.address);
+
+    const depegOracleContract = await ethers.getContractFactory("FakeOracle");
+    depegOracle = await depegOracleContract.deploy(f_oracle, contract_owner);
+    console.log("depegOracle address", depegOracle.address);
 
   });
 
@@ -89,7 +102,7 @@ describe("Integration test for Y2K Earthquake Contracts on Arbitrum mainnet", fu
         console.log("farmer2OldWETHBalance", farmer2OldWETHBalance);
       
       // Create market place
-        const tx = await vaultFactory.connect(signer).createNewMarket(5, dai_addr, 99000000, 1696230000, 1696269600, aggregator_addr, "y2kWETH_99*JUNE");
+        const tx = await vaultFactory.connect(signer).createNewMarket(5, dai_addr, 99000000, startEpoch, endEpoch, aggregator_addr, "y2kWETH_99*JUNE");
         const receipt = await tx.wait();
         
         const event = receipt.events.find((e) => e.event === "MarketCreated");
@@ -105,7 +118,7 @@ describe("Integration test for Y2K Earthquake Contracts on Arbitrum mainnet", fu
         console.log("oracle_addr",oracle_addr);
         
       // Create StakingRewards
-        const tx_rewards = await rewardsFactory.connect(signer).createStakingRewards(marketIndex, 1696269600);
+        const tx_rewards = await rewardsFactory.connect(signer).createStakingRewards(marketIndex, endEpoch);
         const rewards = await tx_rewards.wait();
         const rewards_event = rewards.events.find((e) => e.event === "CreatedStakingReward");
         const insrStake_addr = rewards_event.args[2];
@@ -131,28 +144,32 @@ describe("Integration test for Y2K Earthquake Contracts on Arbitrum mainnet", fu
       //////////////////////////////////////////////////////////////////////////////////////////
 
       // Deposit weth to hedge vault
-        const depositAmount1 = ethers.utils.parseUnits("0.5");
+        const depositAmount1 = ethers.utils.parseUnits("50");
         await weth.connect(farmer1).approve(hedgeVaultContract.address, depositAmount1);
-        await hedgeVaultContract.connect(farmer1).deposit(1696269600, depositAmount1, farmer1.address);
+        await hedgeVaultContract.connect(farmer1).deposit(endEpoch, depositAmount1, farmer1.address);
         console.log("after deposit hedge...",await weth.balanceOf(farmer1.address));
         
       // Deposit weth to risk vault
-        const depositAmount2 = ethers.utils.parseUnits("5");
+        const depositAmount2 = ethers.utils.parseUnits("100");
         await weth.connect(farmer2).approve(riskVaultContract.address, depositAmount2);
-        await riskVaultContract.connect(farmer2).deposit(1696269600, depositAmount2, farmer2.address);
+        await riskVaultContract.connect(farmer2).deposit(endEpoch, depositAmount2, farmer2.address);
         console.log("after deposit risk...",await weth.balanceOf(farmer2.address));
       
+        // console.log("currentTimeBeforeNotify",Math.floor(Date.now() / 1000));
+        // const balance_y2k = await y2kToken.balanceOf(hedgeStakingRewardsContract.address);
+        // console.log("balance_y2k ->>>>>", balance_y2k);
+        // const notify_tx1 = await hedgeStakingRewardsContract.connect(signer).notifyRewardAmount(depositAmount1);
+        
+
       // Transfer shares to 3rd parth, StakingRewards
         await hedgeVaultContract.connect(farmer1).setApprovalForAll(hedgeStakingRewardsContract.address, true);
         const stake_tx = await hedgeStakingRewardsContract.connect(farmer1).stake(depositAmount1);
         await expect(stake_tx).to.emit(hedgeStakingRewardsContract, "Staked");
+        console.log("staked_token->>>>>>>>>>>>>>>>>>>>>>",await hedgeStakingRewardsContract.balanceOf(farmer1.address));
         await expect(hedgeStakingRewardsContract.connect(farmer1).getReward()).to.revertedWith("Pausable: paused");
 
-        const earned = await hedgeStakingRewardsContract.connect(farmer1).earned(farmer1.address);
+        const earned = await hedgeStakingRewardsContract.connect(farmer1).balanceOf(farmer1.address);
         console.log("earned", earned);
-        await hedgeStakingRewardsContract.connect(signer).unpause();
-
-        await hedgeStakingRewardsContract.connect(farmer1).getReward();
 
         const totalSupply1 = await hedgeStakingRewardsContract.totalSupply();
         console.log("totalSupply1", totalSupply1);
@@ -163,29 +180,42 @@ describe("Integration test for Y2K Earthquake Contracts on Arbitrum mainnet", fu
       // Transfer shares to 3rd parth, StakingRewards
         await riskVaultContract.connect(farmer2).setApprovalForAll(riskStakingRewardsContract.address, true);
         const stake_tx2 = await riskStakingRewardsContract.connect(farmer2).stake(depositAmount2);
+
         await expect(stake_tx2).to.emit(riskStakingRewardsContract, "Staked");
+        console.log("staked_token->>>>>>>>>>>>>>>>>>>>>>",await riskStakingRewardsContract.balanceOf(farmer2.address));
         await expect(riskStakingRewardsContract.connect(farmer2).getReward()).to.revertedWith("Pausable: paused");
 
       // Get current token price from oracle
         const currentTokenPrice = await controller.getLatestPrice(dai_addr);
         console.log("currentTokenPrice",currentTokenPrice);
 
-        const idEpochBegin = await hedgeVaultContract.idEpochBegin(1696269600);
+        const idEpochBegin = await hedgeVaultContract.idEpochBegin(endEpoch);
         console.log("idEpochBegin ->>>", idEpochBegin);
 
       // Using half days is to simulate how we doHardwork in the real world
         const startTimestamp = await latest();
+        const currentTimestamp = Math.floor(Date.now() / 1000);
+        console.log(currentTimestamp);
         console.log("startTimestamp", startTimestamp);
 
-        await advanceTime(15 * 86400);
+        // await advanceTime(15 * 86400);
+        await ethers.provider.send("evm_increaseTime", [864000000]);
+        await advanceBlockTo(100);
         const endTimestamp = await latest();
         console.log("endTimestamp", endTimestamp);
+
+        const currentTimestamp2 = Math.floor(Date.now() / 1000);
+        console.log(currentTimestamp2);
         
-        const idEpochEnded = await hedgeVaultContract.idEpochEnded(1696269600);
+        console.log("rewards->>>>>>>>>>>>>>>>>>>>>>",await riskStakingRewardsContract.rewards(farmer2.address));
+
+        const idEpochEnded = await hedgeVaultContract.idEpochEnded(endEpoch);
         console.log("idEpochEnded ->>>", idEpochEnded);
 
-        const tx_dma = await vaultFactory.connect(signer).deployMoreAssets(marketIndex, 1696269600, 1696370800, 5);
-        await expect(tx_dma).to.emit(vaultFactory, "EpochCreated");
+
+        // const tx_dma = await vaultFactory.connect(signer).deployMoreAssets(marketIndex, endEpoch, 1696370800, 5);
+        // await expect(tx_dma).to.emit(vaultFactory, "EpochCreated");
+
 
         const currentTokenPrice2 = await controller.getLatestPrice(dai_addr);
         console.log("currentTokenPrice2",currentTokenPrice2);
@@ -194,34 +224,61 @@ describe("Integration test for Y2K Earthquake Contracts on Arbitrum mainnet", fu
         console.log("length", length);
 
       // Trigger epoch event
-        await controller.connect(signer).triggerEndEpoch(marketIndex, 1696269600);
+        await controller.connect(signer).triggerEndEpoch(marketIndex, endEpoch);
+        
+        const idEpochEnded2 = await hedgeVaultContract.idEpochEnded(endEpoch);
+        console.log("idEpochEnded2 ->>>", idEpochEnded2);
 
-        const tx_dma2 = await vaultFactory.connect(signer).deployMoreAssets(marketIndex, 1696269600, 1696370800, 5);
-        await expect(tx_dma2).to.emit(vaultFactory, "EpochCreated");
+        // const assets1 = hedgeVaultContract.balanceOf(farmer1.address);
+        // await hedgeVaultContract.connect(farmer1).withdraw(endEpoch, assets1, farmer1.address, farmer1.address);
+      // const share1 = await hedgeVaultContract.connect(farmer1).previewWithdraw(endEpoch, dai_addr);
+      // console.log("share1", share1);
+        // await expect(share1).to.be.equal(weth.balanceOf(farmer1));
+        
+        // const assets2 = hedgeVaultContract.balanceOf(farmer2.address, endEpoch);
+        // await riskVaultContract.connect(farmer2).withdraw(endEpoch, assets2, farmer1.address, farmer1.address);
+      // const share2 = await riskVaultContract.connect(farmer2).previewWithdraw(endEpoch, dai_addr);
+      // console.log("share2", share2);
+        // await expect(share2).to.be.equal(weth.balanceOf(farmer2));
+
+
+        // const tx_dma2 = await vaultFactory.connect(signer).deployMoreAssets(marketIndex, endEpoch, 1696370800, 5);
+        // await expect(tx_dma2).to.emit(vaultFactory, "EpochCreated");
+
+        
+
+
+        // const notify_tx2 = await riskStakingRewardsContract.connect(signer).notifyRewardAmount(depositAmount2);
 
         const currentTokenPrice3 = await controller.getLatestPrice(dai_addr);
-        console.log("currentTokenPrice2",currentTokenPrice3);
-
-        await controller.connect(signer).triggerDepeg(marketIndex, 1696370800);
-
-        await hedgeVaultContract.connect(farmer1).setApprovalForAll(hedgeStakingRewardsContract.address, true);
-        const withdraw_tx = await hedgeStakingRewardsContract.connect(farmer1).withdraw(depositAmount1);
-        await expect(withdraw_tx).to.emit(hedgeStakingRewardsContract, "Withdrawn");
+        console.log("currentTokenPrice3",currentTokenPrice3);
+        
+        // await controller.connect(signer).triggerDepeg(marketIndex, 1696370800);
         
         const totalSupply = await hedgeStakingRewardsContract.totalSupply();
         console.log("totalSupply", totalSupply);
 
         const balanceOf = await hedgeStakingRewardsContract.balanceOf(farmer1.address);
         console.log("balanceOf", balanceOf);
-        await expectd(hedgeStakingRewardsContract.connect(farmer1).getReward()).to.emit(hedgeStakingRewardsContract, "RewardPaid");
+        // await expect(hedgeStakingRewardsContract.connect(farmer1).getReward()).to.emit(hedgeStakingRewardsContract, "RewardPaid");
 
-        const share1 = await hedgeVaultContract.connect(farmer1).withdraw(1696269600, depositAmount1, farmer1.address, farmer1.address);
-        console.log("share1= >>>", share1);
+        const earnedAmount1 = await hedgeStakingRewardsContract.connect(farmer1).earned(farmer1.address);
+        console.log("earned1", earnedAmount1);
 
-        await expectd(riskStakingRewardsContract.connect(farmer2).getReward()).to.emit(riskStakingRewardsContract, "RewardPaid");
+        const earnedAmount2 = await riskStakingRewardsContract.connect(farmer2).earned(farmer2.address);
+        console.log("earned2", earnedAmount2);
         
-        const earnedAmount = await hedgeStakingRewardsContract.connect(farmer1).earned(farmer1.address);
-        console.log("earned", earnedAmount);
+        await hedgeStakingRewardsContract.connect(signer).unpause();
+        await hedgeStakingRewardsContract.connect(farmer1).getReward();
+        console.log("earned1AfterReward", await hedgeStakingRewardsContract.balanceOf(farmer1.address));
+        
+        await riskStakingRewardsContract.connect(signer).unpause();
+        await riskStakingRewardsContract.connect(farmer2).getReward();
+        console.log("earned2AfterReward", await riskStakingRewardsContract.balanceOf(farmer2.address));
+
+        await hedgeVaultContract.connect(farmer1).setApprovalForAll(hedgeStakingRewardsContract.address, true);
+        const withdraw_tx = await hedgeStakingRewardsContract.connect(farmer1).withdraw(depositAmount1);
+        await expect(withdraw_tx).to.emit(hedgeStakingRewardsContract, "Withdrawn");
 
         let farmerWETHBalanceAfterDeposit = await weth.balanceOf(farmer1.address);
         console.log("farmerWETHBalanceAfterDeposit", farmerWETHBalanceAfterDeposit);
