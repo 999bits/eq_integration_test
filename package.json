@@ -1,6 +1,7 @@
 {
   "name": "hardhat-project",
   "devDependencies": {
+    "@nomiclabs/hardhat-etherscan": "^3.1.7",
     "hardhat": "^2.14.1"
   },
   "dependencies": {
@@ -12,6 +13,7 @@
     "@openzeppelin/test-helpers": "^0.5.16",
     "@uniswap/sdk": "^3.0.3",
     "@uniswap/v2-periphery": "^1.1.0-beta.0",
+    "dotenv": "^16.1.4",
     "web3": "^1.10.0"
   }
 }
