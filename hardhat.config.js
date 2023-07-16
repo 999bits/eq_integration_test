@@ -6,7 +6,7 @@ require('dotenv').config()
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  defaultNetwork: "testnet",
+  defaultNetwork: "hardhat",
   networks: {
     localhost: {
       url: "http://127.0.0.1:8545"
@@ -19,15 +19,15 @@ module.exports = {
         // blockNumber: 98403400
       }
     },
-    testnet: {
-      url: "https://data-seed-prebsc-1-s1.binance.org:8545",
-      chainId: 97,
-      // gasPrice: "2000000000", // 2 Gwei
-      gasPrice: "auto", 
-      gas: "auto", 
+    // testnet: {
+    //   url: "https://data-seed-prebsc-1-s1.binance.org:8545",
+    //   chainId: 97,
+    //   // gasPrice: "2000000000", // 2 Gwei
+    //   gasPrice: "auto", 
+    //   gas: "auto", 
       
-      accounts: {mnemonic: process.env.SECRET_KEY}
-    },
+    //   accounts: {mnemonic: process.env.SECRET_KEY}
+    // },
   },
   etherscan: {
     // Your API key for Etherscan

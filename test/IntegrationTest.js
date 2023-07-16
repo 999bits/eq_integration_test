@@ -148,6 +148,7 @@ describe("Integration test for Y2K Earthquake Contracts on Arbitrum mainnet", fu
         await weth.connect(farmer1).approve(hedgeVaultContract.address, depositAmount1);
         await hedgeVaultContract.connect(farmer1).deposit(endEpoch, depositAmount1, farmer1.address);
         console.log("after deposit hedge...",await weth.balanceOf(farmer1.address));
+        console.log("after deposit hedge...",await hedgeVaultContract.balanceOf(farmer1.address));
         
       // Deposit weth to risk vault
         const depositAmount2 = ethers.utils.parseUnits("100");

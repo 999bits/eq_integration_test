@@ -38,18 +38,18 @@ async function main() {
   const vaultFactory = await VaultFactory.deploy(wallet_addr, wbnb_addr, wallet_addr);
 
 // govtoken deployment
-  const GovTokenFactory = await ethers.getContractFactory("GovToken"); //Replace with name of your smart contract
-  const govTokenFactory = await GovTokenFactory.deploy();
+//   const GovTokenFactory = await ethers.getContractFactory("GovToken"); //Replace with name of your smart contract
+//   const govTokenFactory = await GovTokenFactory.deploy();
 
-// controller deployment
-  const ControllerFactory = await ethers.getContractFactory("Controller"); //Replace with name of your smart contract
-  const controllerFactory = await ControllerFactory.deploy(vaultfactory_addr);
+// // controller deployment
+//   const ControllerFactory = await ethers.getContractFactory("Controller"); //Replace with name of your smart contract
+//   const controllerFactory = await ControllerFactory.deploy(vaultfactory_addr);
 
-// pausableRewardsFactory deployment
-  const RewardsFactory = await ethers.getContractFactory("RewardsFactory"); //Replace with name of your smart contract
-  const rewardsFactory = await RewardsFactory.deploy(govToken_addr, vaultfactory_addr);
+// // pausableRewardsFactory deployment
+//   const RewardsFactory = await ethers.getContractFactory("RewardsFactory"); //Replace with name of your smart contract
+//   const rewardsFactory = await RewardsFactory.deploy(govToken_addr, vaultfactory_addr);
 
-  // console.log("rewardsFactory address:", rewardsFactory.address);
+  console.log("vaultFactory address:", vaultFactory.address);
 
 
 
